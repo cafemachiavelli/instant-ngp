@@ -304,6 +304,7 @@ public:
 	void mouse_wheel(Eigen::Vector2f m, float delta);
 	void handle_file(const std::string& file);
 	void set_nerf_camera_matrix(const Eigen::Matrix<float, 3, 4>& cam);
+	void set_nerf_light_dir(const Eigen::Vector3f light_dir);
 	Eigen::Vector3f look_at() const;
 	void set_look_at(const Eigen::Vector3f& pos);
 	float scale() const { return m_scale; }

@@ -449,6 +449,7 @@ PYBIND11_MODULE(pyngp, m) {
 		.def_readwrite("zoom", &Testbed::m_zoom)
 		.def_readwrite("screen_center", &Testbed::m_screen_center)
 		.def("set_nerf_camera_matrix", &Testbed::set_nerf_camera_matrix)
+		.def("set_nerf_light_dir", &Testbed::set_nerf_light_dir)
 		.def("set_camera_to_training_view", &Testbed::set_camera_to_training_view)
 		.def("first_training_view", &Testbed::first_training_view)
 		.def("last_training_view", &Testbed::last_training_view)
