@@ -318,7 +318,9 @@ if __name__ == "__main__":
 			cam_matrix = f["transform_matrix"]
 			if ("driver_parameters" in f):
 				light_dict = (f["driver_parameters"])
-				light_dir = [light_dict["LightX"],light_dict["LightY"],light_dict["LightZ"]]
+				# In the JSON file X is left, Y top, Z back
+				# In NGP x is top, y is back, z is left
+				light_dir = [light_dict["LightY"],light_dict["LightZ"],light_dict["LightX"]]
 				testbed.set_nerf_light_dir(light_dir)
 
 			testbed.set_nerf_camera_matrix(np.matrix(cam_matrix)[:-1,:])
