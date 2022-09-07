@@ -217,6 +217,11 @@ void Testbed::set_nerf_camera_matrix(const Matrix<float, 3, 4>& cam) {
 	m_camera = m_nerf.training.dataset.nerf_matrix_to_ngp(cam);
 }
 
+void Testbed::set_nerf_light_dir(const Vector3f light_dir){
+	m_nerf.light_dir = light_dir;
+}
+
+
 Vector3f Testbed::look_at() const {
 	return view_pos() + view_dir() * m_scale;
 }

@@ -1,0 +1,18 @@
+{
+	"parent": "base.json",
+	"network": {
+		"n_neurons": 128,
+		"n_hidden_layers": 3
+	},
+	"rgb_network": {
+
+		"n_neurons": 128,
+		"n_hidden_layers": 3
+	},
+	"dir_encoding": {
+		"nested": [
+			{
+				"degree": 6
+			}
+	]}
+}

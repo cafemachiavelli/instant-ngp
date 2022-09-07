@@ -87,7 +87,7 @@ set(TCNN_BUILD_BENCHMARK OFF)
 set(TCNN_BUILD_EXAMPLES OFF)
 add_subdirectory(dependencies/tiny-cuda-nn)
 
-set(CMAKE_CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
+set(CMAKE_CUDA_ARCHITECTURES "86")
 
 if (NGP_BUILD_WITH_GUI)
 	find_package(Vulkan)

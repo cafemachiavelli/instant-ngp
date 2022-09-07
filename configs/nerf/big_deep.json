@@ -1,0 +1,15 @@
+{
+	"parent": "base.json",
+	"encoding": {		
+		"log2_hashmap_size": 21
+	},
+	"network": {
+		"n_neurons": 128,
+		"n_hidden_layers": 2
+	},
+	"rgb_network": {
+
+		"n_neurons": 128,
+		"n_hidden_layers": 3
+	}
+}
