@@ -138,8 +138,9 @@ public:
 			const Eigen::Matrix<float, 3, 4>& camera_matrix0,
 			const Eigen::Matrix<float, 3, 4>& camera_matrix1,
 			const Eigen::Vector4f& rolling_shutter,
-			Eigen::Vector2f screen_center,
-			Eigen::Vector3f parallax_shift,
+			const Eigen::Vector2f& screen_center,
+			const Eigen::Vector3f& parallax_shift,
+			const Eigen::Vector2i& quilting_dims,
 			bool snap_to_pixel_centers,
 			const BoundingBox& render_aabb,
 			const Eigen::Matrix3f& render_aabb_to_local,
@@ -387,6 +388,8 @@ public:
 	void set_camera_from_time(float t);
 	void update_loss_graph();
 	void load_camera_path(const std::string& filepath_string);
+	bool loop_animation();
+	void set_loop_animation(bool value);
 
 	float compute_image_mse(bool quantize_to_byte);
 
@@ -431,6 +434,9 @@ public:
 
 	bool m_include_optimizer_state_in_snapshot = false;
 	bool m_render_ground_truth = false;
+	EGroundTruthRenderMode m_ground_truth_render_mode = EGroundTruthRenderMode::Shade;
+	float m_ground_truth_alpha = 1.0f;
+
 	bool m_train = false;
 	bool m_training_data_available = false;
 	bool m_render = true;
@@ -468,6 +474,8 @@ public:
 	Eigen::Vector3f m_sun_dir = Eigen::Vector3f::Ones().normalized();
 	float m_bounding_radius = 1;
 	float m_exposure = 0.f;
+
+	Eigen::Vector2i m_quilting_dims = Eigen::Vector2i::Ones();
 
 	ERenderMode m_render_mode = ERenderMode::Shade;
 	EMeshRenderMode m_mesh_render_mode = EMeshRenderMode::VertexNormals;
@@ -803,8 +811,7 @@ public:
 	bool m_snap_to_pixel_centers = false;
 	bool m_edit_render_aabb = false;
 
-	Eigen::Vector2f m_parallax_shift = {0.f, 0.f}; // to shift the viewer's head position by some amount parallel to the screen
-	Eigen::Vector3f get_scaled_parallax_shift() const { return {m_parallax_shift.x(), m_parallax_shift.y(), m_scale}; } // pack m_scale into the parallax parameter so we know where the screen plane is.
+	Eigen::Vector3f m_parallax_shift = {0.0f, 0.0f, 0.0f}; // to shift the viewer's origin by some amount in camera space
 
 	// CUDA stuff
 	tcnn::StreamAndEvent m_stream;

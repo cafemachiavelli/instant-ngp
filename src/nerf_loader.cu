@@ -232,11 +232,11 @@ void read_camera_distortion(const nlohmann::json &json, CameraDistortion &camera
 	}
 
 	if (json.contains("rolling_shutter")) {
-		// the rolling shutter is a float3 of [A,B,C] where the time
-		// for each pixel is t= A + B * u + C * v
-		// where u and v are the pixel coordinates (0-1),
-		// and the resulting t is used to interpolate between the start
-		// and end transforms for each training xform
+		// The rolling shutter is a float4 of [A,B,C,D] where the time
+		// for each pixel is t= A + B * u + C * v + D * motionblur_time,
+		// where u and v are the pixel coordinates within (0-1).
+		// The resulting t is used to interpolate between the start
+		// and end transforms for each training xform.
 		float motionblur_amount = 0.f;
 		if (json["rolling_shutter"].size() >= 4) {
 			motionblur_amount = float(json["rolling_shutter"][3]);
@@ -415,8 +415,8 @@ NerfDataset load_nerf(const std::vector<filesystem::path>& jsonpaths, float shar
 
 		fs::path basepath = jsonpaths[i].parent_path();
 		std::string jp = jsonpaths[i].str();
-		auto lastdot=jp.find_last_of('.'); if (lastdot==std::string::npos) lastdot=jp.length();
-		auto lastunderscore=jp.find_last_of('_'); if (lastunderscore==std::string::npos) lastunderscore=lastdot; else lastunderscore++;
+		auto lastdot = jp.find_last_of('.'); if (lastdot==std::string::npos) lastdot=jp.length();
+		auto lastunderscore = jp.find_last_of('_'); if (lastunderscore==std::string::npos) lastunderscore=lastdot; else lastunderscore++;
 		std::string part_after_underscore(jp.begin()+lastunderscore,jp.begin()+lastdot);
 
 		if (json.contains("enable_ray_loading")) {
@@ -534,7 +534,7 @@ NerfDataset load_nerf(const std::vector<filesystem::path>& jsonpaths, float shar
 			}
 		}
 
-		if (json.contains("frames") && json["frames"].is_array()) pool.parallelForAsync<size_t>(0, json["frames"].size(), [&, basepath, image_idx, info](size_t i) {
+		if (json.contains("frames") && json["frames"].is_array()) pool.parallelForAsync<size_t>(0, json["frames"].size(), [&progress, &n_loaded, &result, &images, &json, basepath, image_idx, info, rolling_shutter, principal_point, camera_distortion, part_after_underscore, fix_premult, enable_depth_loading, enable_ray_loading](size_t i) {
 			size_t i_img = i + image_idx;
 			auto& frame = json["frames"][i];
 			LoadedImageInfo& dst = images[i_img];
@@ -652,7 +652,7 @@ NerfDataset load_nerf(const std::vector<filesystem::path>& jsonpaths, float shar
 			}
 
 			nlohmann::json& jsonmatrix_start = frame.contains("transform_matrix_start") ? frame["transform_matrix_start"] : frame["transform_matrix"];
-			nlohmann::json& jsonmatrix_end =   frame.contains("transform_matrix_end") ? frame["transform_matrix_end"] : jsonmatrix_start;
+			nlohmann::json& jsonmatrix_end = frame.contains("transform_matrix_end") ? frame["transform_matrix_end"] : jsonmatrix_start;
 
 			if (frame.contains("driver_parameters")) {
 				Eigen::Vector3f light_dir(
