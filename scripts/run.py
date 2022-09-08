@@ -279,7 +279,10 @@ if __name__ == "__main__":
 				if i == 0:
 					write_image("out.png", image)
 
-				diffimg = np.absolute(image - ref_image)
+				try:
+					diffimg = np.absolute(image - ref_image)
+				except:
+					diffimg = np.absolute(image[:,:,:3] - ref_image)
 				diffimg[...,3:4] = 1.0
 				if i == 0:
 					write_image("diff.png", diffimg)
@@ -296,6 +299,7 @@ if __name__ == "__main__":
 				maxpsnr = psnr if psnr>maxpsnr else maxpsnr
 				totcount = totcount+1
 				t.set_postfix(psnr = totpsnr/(totcount or 1))
+				print(f"Image {p}: PSNR={psnr}, SSIM={ssim}")
 
 		psnr_avgmse = mse2psnr(totmse/(totcount or 1))
 		psnr = totpsnr/(totcount or 1)
