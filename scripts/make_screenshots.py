@@ -107,14 +107,16 @@ def calcLossesLegoAll():
 def calcLossesBikePython():
 	scene = path.join(DATADIR,"bike/transforms_python_2000.json")
 	snap = path.join(SNAPDIR,"bike_python.msgpack")
-	test = path.join(DATADIR,"bike/transforms_python_2000.json")
+	test = path.join(DATADIR,"bike/transforms_python_test.json")
 	calcLosses(scene,snap,test)
 
 	
 
 if __name__ == "__main__":
 	checkSnapshots()
-	saveSnapshots()
-	makeScreenshotSingle()
-	makeScreenshotSingleColmap()
-	makeScreenshotBikeColmap()
+	#saveSnapshots()
+	#makeScreenshotSingle()
+	#makeScreenshotSingleColmap()
+	#makeScreenshotBikeColmap()
+	calcLossesBikePython()
+	# Single Colmap still isn't working
