@@ -331,7 +331,6 @@ if __name__ == "__main__":
 		testbed.fov = ref_transforms["camera_angle_x"] * 180 / np.pi
 		if not args.screenshot_frames:
 			args.screenshot_frames = range(len(ref_transforms["frames"]))
-		print(args.screenshot_frames)
 		for idx in args.screenshot_frames:
 			f = ref_transforms["frames"][int(idx)]
 			cam_matrix = f["transform_matrix"]
@@ -342,7 +341,6 @@ if __name__ == "__main__":
 				light_dir = [light_dict["LightY"],light_dict["LightZ"],light_dict["LightX"]]
 				light_norm = np.linalg.norm(light_dir)
 				if light_norm > 1.1:
-					print("Warning: Unnormalized light direction. transforms.json may be broken.")
 					light_dir /= light_norm
 				testbed.set_nerf_light_dir(light_dir)
 
