@@ -38,6 +38,7 @@ def parse_args():
 	parser.add_argument("--test_transforms", default="", help="Path to a nerf style transforms json from which we will compute PSNR.")
 	parser.add_argument("--near_distance", default=-1, type=float, help="Set the distance from the camera at which training rays start for nerf. <0 means use ngp default")
 	parser.add_argument("--exposure", default=0.0, type=float, help="Controls the brightness of the image. Positive numbers increase brightness, negative numbers decrease it.")
+	parser.add_argument("--diff_dir", default="", help="Path to folder where source, reconstruction and difference images will be saved.")
 
 	parser.add_argument("--screenshot_transforms", default="", help="Path to a nerf style transforms.json from which to save screenshots.")
 	parser.add_argument("--screenshot_frames", nargs="*", help="Which frame(s) to take screenshots of.")
@@ -54,6 +55,7 @@ def parse_args():
 
 	parser.add_argument("--save_mesh", default="", help="Output a marching-cubes based mesh from the NeRF or SDF model. Supports OBJ and PLY format.")
 	parser.add_argument("--marching_cubes_res", default=256, type=int, help="Sets the resolution for the marching cubes grid.")
+	
 
 	parser.add_argument("--width", "--screenshot_w", type=int, default=0, help="Resolution width of GUI and screenshots.")
 	parser.add_argument("--height", "--screenshot_h", type=int, default=0, help="Resolution height of GUI and screenshots.")
@@ -109,6 +111,7 @@ if __name__ == "__main__":
 		testbed.tonemap_curve = ngp.TonemapCurve.ACES
 
 	if args.scene:
+		print(args.scene)
 		scene = args.scene
 		if not os.path.exists(args.scene) and args.scene in scenes:
 			scene = os.path.join(scenes[args.scene]["data_dir"], scenes[args.scene]["dataset"])
@@ -253,6 +256,8 @@ if __name__ == "__main__":
 							ref_fname = os.path.join(data_dir, p + ".jpeg")
 							if not os.path.isfile(ref_fname):
 								ref_fname = os.path.join(data_dir, p + ".exr")
+								if not os.path.isfile(ref_fname):
+									continue
 
 				ref_image = read_image(ref_fname)
 
@@ -271,13 +276,23 @@ if __name__ == "__main__":
 					ref_image[...,:3] = srgb_to_linear(ref_image[...,:3])
 
 				if i == 0:
-					write_image("ref.png", ref_image)
+					write_image(os.path.join(args.diff_dir,"ref.png"), ref_image)
 
 				testbed.set_nerf_camera_matrix(np.matrix(frame["transform_matrix"])[:-1,:])
+				if ("driver_parameters" in frame):
+					light_dict = (frame["driver_parameters"])
+					# In the JSON file X is left, Y top, Z back
+					# In NGP x is top, y is back, z is left
+					light_dir = [light_dict["LightY"],light_dict["LightZ"],light_dict["LightX"]]
+					light_norm = np.linalg.norm(light_dir)
+					if light_norm > 1.1:
+						print("Warning: Unnormalized light direction. transforms.json may be broken.")
+						light_dir /= light_norm
+					testbed.set_nerf_light_dir(light_dir)
 				image = testbed.render(ref_image.shape[1], ref_image.shape[0], spp, True)
 
-				if i == 0:
-					write_image("out.png", image)
+				if i == 0 or args.diff_dir != "":
+					write_image(os.path.join(args.diff_dir,"out.png"), image)
 
 				try:
 					diffimg = np.absolute(image - ref_image)
@@ -285,7 +300,7 @@ if __name__ == "__main__":
 					diffimg = np.absolute(image[:,:,:3] - ref_image)
 				diffimg[...,3:4] = 1.0
 				if i == 0:
-					write_image("diff.png", diffimg)
+					write_image(os.path.join(args.diff_dir,"diff.png"), diffimg)
 
 				A = np.clip(linear_to_srgb(image[...,:3]), 0.0, 1.0)
 				R = np.clip(linear_to_srgb(ref_image[...,:3]), 0.0, 1.0)
@@ -316,7 +331,6 @@ if __name__ == "__main__":
 		testbed.fov = ref_transforms["camera_angle_x"] * 180 / np.pi
 		if not args.screenshot_frames:
 			args.screenshot_frames = range(len(ref_transforms["frames"]))
-		print(args.screenshot_frames)
 		for idx in args.screenshot_frames:
 			f = ref_transforms["frames"][int(idx)]
 			cam_matrix = f["transform_matrix"]
@@ -325,6 +339,9 @@ if __name__ == "__main__":
 				# In the JSON file X is left, Y top, Z back
 				# In NGP x is top, y is back, z is left
 				light_dir = [light_dict["LightY"],light_dict["LightZ"],light_dict["LightX"]]
+				light_norm = np.linalg.norm(light_dir)
+				if light_norm > 1.1:
+					light_dir /= light_norm
 				testbed.set_nerf_light_dir(light_dir)
 
 			testbed.set_nerf_camera_matrix(np.matrix(cam_matrix)[:-1,:])

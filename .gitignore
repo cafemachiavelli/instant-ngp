@@ -8,6 +8,9 @@
 /venv
 /video
 /*.json
+diff.png
+out.png
+ref.png
 *.msgpack
 *.training
 __pycache__
