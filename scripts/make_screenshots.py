@@ -2,15 +2,17 @@ from subprocess import run
 from os import path
 import argparse
 
+
+STEPS = "100000"
 SAMPLEDIR = "/home/mschmidt/instant-relightable-ngp/instant-ngp/data/nerf"
 WORKDIR = "/home/mschmidt/instant-relightable-ngp/instant-ngp/scripts"
 SNAPDIR = "/home/mschmidt/instant-relightable-ngp/data/snapshots"
 DATADIR = "/home/mschmidt/instant-relightable-ngp/data/synthetic"
 DOMEDIR = "/mnt/bigdisk/OBJECTS2011/Samurai/"
 
-SNAPS = ["fox", "bike_singlecolmap" "bike_single","bike_colmap", "bike_python", "lego","samurai", "metal_balls"]
+SNAPS = ["lego_big","fox", "bike_singlecolmap", "bike_single","bike_colmap", "bike_python", "lego","lego_single","samurai", "metal_balls"]
 
-scene_bike_single = "../../data/synthetic/bike/transforms_python_151.json"
+scene_bike_single = "../../data/synthetic/bike/transforms_python_cl066.json"
 
 def parse_args():
 	parser = argparse.ArgumentParser(description="Run Relit-NGP, save configurations, render screenshots or calculate errors")
@@ -27,34 +29,6 @@ def parse_args():
 	parser.add_argument("--near_distance", default=-1, type=float, help="Set the distance from the camera at which training rays start for nerf. <0 means use ngp default")
 	parser.add_argument("--exposure", default=0.0, type=float, help="Controls the brightness of the image. Positive numbers increase brightness, negative numbers decrease it.")
 	parser.add_argument("--diff_dir", default="", help="Path to folder where source, reconstruction and difference images will be saved.")
-
-	parser.add_argument("--screenshot_transforms", default="", help="Path to a nerf style transforms.json from which to save screenshots.")
-	parser.add_argument("--screenshot_frames", nargs="*", help="Which frame(s) to take screenshots of.")
-	parser.add_argument("--screenshot_dir", default="", help="Which directory to output screenshots to.")
-	parser.add_argument("--screenshot_spp", type=int, default=16, help="Number of samples per pixel in screenshots.")
-
-	parser.add_argument("--video_camera_path", default="", help="The camera path to render, e.g., base_cam.json.")
-	parser.add_argument("--video_camera_smoothing", action="store_true", help="Applies additional smoothing to the camera trajectory with the caveat that the endpoint of the camera path may not be reached.")
-	parser.add_argument("--video_loop_animation", action="store_true", help="Connect the last and first keyframes in a continuous loop.")
-	parser.add_argument("--video_fps", type=int, default=60, help="Number of frames per second.")
-	parser.add_argument("--video_n_seconds", type=int, default=1, help="Number of seconds the rendered video should be long.")
-	parser.add_argument("--video_spp", type=int, default=8, help="Number of samples per pixel. A larger number means less noise, but slower rendering.")
-	parser.add_argument("--video_output", type=str, default="video.mp4", help="Filename of the output video.")
-
-	parser.add_argument("--save_mesh", default="", help="Output a marching-cubes based mesh from the NeRF or SDF model. Supports OBJ and PLY format.")
-	parser.add_argument("--marching_cubes_res", default=256, type=int, help="Sets the resolution for the marching cubes grid.")
-	
-
-	parser.add_argument("--width", "--screenshot_w", type=int, default=0, help="Resolution width of GUI and screenshots.")
-	parser.add_argument("--height", "--screenshot_h", type=int, default=0, help="Resolution height of GUI and screenshots.")
-
-	parser.add_argument("--gui", action="store_true", help="Run the testbed GUI interactively.")
-	parser.add_argument("--train", action="store_true", help="If the GUI is enabled, controls whether training starts immediately.")
-	parser.add_argument("--n_steps", type=int, default=-1, help="Number of steps to train for before quitting.")
-	parser.add_argument("--second_window", action="store_true", help="Open a second window containing a copy of the main output.")
-
-	parser.add_argument("--sharpen", default=0, help="Set amount of sharpening applied to NeRF training images. Range 0.0 to 1.0.")
-
 
 	return parser.parse_args()
 
@@ -77,40 +51,57 @@ def saveSnapshots(force=False):
 	scene_bike_colmap = 		"../../data/synthetic/bike/transforms_colmap_2000.json"
 	scene_bike_singlecolmap = 	"../../data/synthetic/bike/transforms_colmap_151.json"
 	scene_bike_python = 		"../../data/synthetic/bike/transforms_python_2000.json"
-	scene_lego = 				"../../data/synthetic/lego/transforms_scale_4.json"
+	scene_lego = 				"../../data/synthetic/lego/transforms_train.json"
+	scene_lego_single = 		"../../data/synthetic/lego/transforms_cl046.json"
 	scene_sam = path.join(DOMEDIR,"./hdr/hdr_alpha_crop/transforms_out.json")
-	scene_balls = 				"../../data/synthetic/metal_linearlight/transforms_python.json"
-	
+	scene_balls = 				"../../data/synthetic/metal_linearlight/transforms_out.json"
+	scene_balls_single = 				"../../data/synthetic/metal_linearlight/transforms_out_cl067.json"
+
+	big =  "/home/mschmidt/instant-relightable-ngp/instant-ngp/configs/nerf/big_deep.json"
+	deep =  "/home/mschmidt/instant-relightable-ngp/instant-ngp/configs/nerf/deep.json"	
+
 	snap_fox = path.join(SNAPDIR,"fox.msgpack")
 	snap_bike_singlecolmap = path.join(SNAPDIR,"bike_singlecolmap.msgpack")
 	snap_bike_single = path.join(SNAPDIR,"bike_single.msgpack")
 	snap_bike_colmap = path.join(SNAPDIR,"bike_colmap.msgpack")
 	snap_bike_python = path.join(SNAPDIR,"bike_python.msgpack")
-	snap_lego = path.join(SNAPDIR,"lego.msgpack")
+	snap_lego = path.join(SNAPDIR,"lego0.msgpack")
+	snap_lego_deep = path.join(SNAPDIR,"lego_deep.msgpack")
 	snap_sam =path.join(SNAPDIR,"samurai.msgpack")
 	snap_balls = path.join(SNAPDIR,"metal_balls.msgpack")
+	snap_balls_single = path.join(SNAPDIR,"metal_balls_single.msgpack")
+	snap_lego_big = path.join(SNAPDIR,"lego_big.msgpack")
+	snap_lego_single = path.join(SNAPDIR, "lego_single0.msgpack")
 	
 	if force or not checkSnapshot("fox"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_fox, "--save_snapshot", snap_fox, "--n_steps", "10000"],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_fox, "--save_snapshot", snap_fox, "--n_steps", STEPS],cwd=WORKDIR)
 	if force or not checkSnapshot("bike_singlecolmap"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_singlecolmap, "--save_snapshot", snap_bike_singlecolmap, "--n_steps", "100000"],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_singlecolmap, "--save_snapshot", snap_bike_singlecolmap, "--n_steps", STEPS],cwd=WORKDIR)
 	if force or not checkSnapshot("bike_single"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_single, "--save_snapshot", snap_bike_single, "--n_steps", "100000"],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_single, "--save_snapshot", snap_bike_single, "--n_steps", STEPS],cwd=WORKDIR)
 	if force or not checkSnapshot("bike_colmap"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_colmap, "--save_snapshot", snap_bike_colmap, "--n_steps", "100000" ],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_colmap, "--save_snapshot", snap_bike_colmap, "--n_steps", STEPS ],cwd=WORKDIR)
 	if force or not checkSnapshot("bike_python"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_python, "--save_snapshot", snap_bike_python, "--n_steps", "100000"],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_bike_python, "--save_snapshot", snap_bike_python, "--n_steps", STEPS],cwd=WORKDIR)
 	if force or not checkSnapshot("lego"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_lego, "--save_snapshot", snap_lego, "--n_steps", "100000"  ],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf","--near_distance", "0.9","--scene", scene_lego, "--save_snapshot", snap_lego, "--n_steps", STEPS  ],cwd=WORKDIR)
 	if force or not checkSnapshot("samurai"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_sam, "--save_snapshot", snap_sam, "--n_steps", "100000"  ],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_sam, "--save_snapshot", snap_sam, "--n_steps", STEPS  ],cwd=WORKDIR)
 	if force or not checkSnapshot("metal_balls"):
-		run(["python3", "run.py","--mode", "nerf", "--scene", scene_balls, "--save_snapshot", snap_balls, "--n_steps", "100000"   ],cwd=WORKDIR)
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_balls, "--save_snapshot", snap_balls, "--n_steps", STEPS   ],cwd=WORKDIR)
+	if force or not checkSnapshot("metal_balls_single"):
+		run(["python3", "run.py","--mode", "nerf", "--scene", scene_balls_single, "--save_snapshot", snap_balls_single, "--n_steps", STEPS   ],cwd=WORKDIR)
+	if force or not checkSnapshot("lego_big"):
+		run(["python3", "run.py","--mode", "nerf", "--near_distance", "0.9","--scene", scene_lego, "--save_snapshot", snap_lego_big, "--n_steps", STEPS,"--network", big   ],cwd=WORKDIR)
+	if force or not checkSnapshot("lego_single"):
+		run(["python3", "run.py","--mode", "nerf","--near_distance", "0.9", "--scene", scene_lego_single, "--save_snapshot", snap_lego_single, "--n_steps", STEPS  ],cwd=WORKDIR)
+	if force or not checkSnapshot("lego_deep"):
+		run(["python3", "run.py","--mode", "nerf", "--near_distance", "0.9","--scene", scene_lego, "--save_snapshot", snap_lego_deep, "--n_steps", STEPS,"--network", deep   ],cwd=WORKDIR)
 
 def makeScreenshots(scene,snap,tf,dir):
 
 	print(f"Rendering screenshots from {scene}, {snap}, {tf}.")
-	run(["python3", "run.py","--mode", "nerf", "--scene", scene, "--load_snapshot", snap, "--screenshot_transforms", tf, "--screenshot_dir", dir ],cwd=WORKDIR)
+	run(["python3", "run.py","--mode", "nerf", "--near_distance", "0.9","--scene", scene, "--load_snapshot", snap, "--screenshot_transforms", tf, "--screenshot_dir", dir ],cwd=WORKDIR)
 
 def makeScreenshotFox():
 	scene = path.join(SAMPLEDIR,"fox/transforms.json")
@@ -119,6 +110,7 @@ def makeScreenshotFox():
 	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/fox/screenshots"
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
+# Bike Screenshots
 def makeScreenshotBikeColmap():
 	scene = path.join(DATADIR,"bike/transforms_colmap_2000.json")
 	snap = path.join(SNAPDIR,"bike_colmap.msgpack")
@@ -126,12 +118,11 @@ def makeScreenshotBikeColmap():
 	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/bike/screenshots/colmap"
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
-# Here debug functions
 def makeScreenshotBike():
 	scene = path.join(DATADIR,"bike/transforms_python_2000.json")
 	snap = path.join(SNAPDIR,"bike_python.msgpack")
-	screenshot_transforms = path.join(DATADIR,"bike/transforms_python_test.json")
-	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/bike/screenshots/python0"
+	screenshot_transforms = path.join(DATADIR,"bike/transforms_python_cl066.json")
+	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/bike/screenshots/python"
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
 def makeScreenshotBikeSingle():
@@ -142,22 +133,37 @@ def makeScreenshotBikeSingle():
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
 def makeScreenshotSingleColmap():
-	scene = path.join(DATADIR,"bike/transforms_colmap_151.json")
+	scene = path.join(DATADIR,"bike/transforms_colmap_cl066.json")
 	snap = path.join(SNAPDIR,"bike_singlecolmap.msgpack")
-	screenshot_transforms = path.join(DATADIR,"bike/transforms_colmap_151.json")
+	screenshot_transforms = path.join(DATADIR,"bike/transforms_colmap_cl066.json")
 	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/bike/screenshots/single_col"
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
+# Lego
 def makeScreenshotLego():
-	scene = path.join(DATADIR,"lego/transforms_scale_4.json")
+	scene = path.join(DATADIR,"lego/transforms_train.json")
 	snap = path.join(SNAPDIR,"lego.msgpack")
-	screenshot_transforms = path.join(DATADIR,"lego/transforms_python_test.json")
+	screenshot_transforms = path.join(DATADIR,"lego/transforms_test.json")
 	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/lego/screenshots/test"
+	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
+
+def makeScreenshotLegoBig():
+	scene = path.join(DATADIR,"lego/transforms_train.json")
+	snap = path.join(SNAPDIR,"lego_big.msgpack")
+	screenshot_transforms = path.join(DATADIR,"lego/transforms_test.json")
+	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/lego/screenshots/big"
+	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
+
+def makeScreenshotLegoSingle():
+	scene = path.join(DATADIR,"lego/transforms_in.json")
+	snap = path.join(SNAPDIR,"lego_single.msgpack")
+	screenshot_transforms = path.join(DATADIR,"lego/transforms_in.json")
+	screenshot_dir = "/home/mschmidt/instant-relightable-ngp/data/synthetic/lego/screenshots/single"
 	makeScreenshots(scene,snap,screenshot_transforms,screenshot_dir)
 
 def calcLosses(scene,snap,test):
 	print(f"Calculating losses from {scene}, {snap}, {test}.")
-	run(["python3", "run.py","--mode", "nerf", 	"--scene", scene, 	"--load_snapshot", snap, 	"--test_transforms", test],cwd=WORKDIR)
+	run(["python3", "run.py","--mode", "nerf", 	"--scene", scene, "--near_distance", "0.99",	"--load_snapshot", snap, 	"--test_transforms", test],cwd=WORKDIR)
 
 def calcLossesFox():
 	scene= path.join(SAMPLEDIR,"fox/transforms.json")
@@ -165,17 +171,35 @@ def calcLossesFox():
 	test = path.join(SAMPLEDIR,"fox/transforms.json")
 	calcLosses(scene,snap,test)
 
-def calcLossesLegoAll():
-	scene = path.join(DATADIR,"lego/transforms_scale_4.json")
+def calcLossesLego():
+	scene = path.join(DATADIR,"lego/transforms_train.json")
 	snap = path.join(SNAPDIR,"lego.msgpack")
-	test = path.join(DATADIR,"lego/transforms_python_test.json")
+	test = path.join(DATADIR,"lego/transforms_cl046.json")
+	calcLosses(scene,snap,test)
+
+def calcLossesLegoBig():
+	scene = path.join(DATADIR,"lego/transforms_train.json")
+	snap = path.join(SNAPDIR,"lego_big.msgpack")
+	test = path.join(DATADIR,"lego/transforms_test.json")
+	calcLosses(scene,snap,test)
+
+def calcLossesLegoDeep():
+	scene = path.join(DATADIR,"lego/transforms_train.json")
+	snap = path.join(SNAPDIR,"lego_deep.msgpack")
+	test = path.join(DATADIR,"lego/transforms_test.json")
+	calcLosses(scene,snap,test)
+
+def calcLossesLegoSingle():
+	scene = path.join(DATADIR,"lego/transforms_cl046.json")
+	snap = path.join(SNAPDIR,"lego_single.msgpack")
+	test = path.join(DATADIR,"lego/transforms_cl046.json")
 	calcLosses(scene,snap,test)
 
 # Bike sets
 def calcLossesBikePython():
 	scene = path.join(DATADIR,"bike/transforms_python_2000.json")
 	snap = path.join(SNAPDIR,"bike_python.msgpack")
-	test = path.join(DATADIR,"bike/transforms_python_test.json")
+	test = path.join(DATADIR,"bike/transforms_python_cl066.json")
 	calcLosses(scene,snap,test)
 
 def calcLossesBikePython1():
@@ -189,27 +213,47 @@ def calcLossesBikeColmap():
 	# Losses of bike with lightdir trained with Colmap
 	scene = path.join(DATADIR,"bike/transforms_colmap_2000.json")
 	snap = path.join(SNAPDIR,"bike_colmap.msgpack")
-	test = path.join(DATADIR,"bike/transforms_colmap_2000.json")
+	test = path.join(DATADIR,"bike/transforms_colmap_cl066.json")
 	calcLosses(scene,snap,test)
 
 def calcLossesBikeColmap1():
-	scene = path.join(DATADIR,"bike/transforms_colmap_151.json")
+	scene = path.join(DATADIR,"bike/transforms_colmap_cl066.json")
 	snap = path.join(SNAPDIR,"bike_singlecolmap.msgpack")
-	test = path.join(DATADIR,"bike/transforms_colmap_151.json")
+	test = path.join(DATADIR,"bike/transforms_colmap_cl066.json")
 	calcLosses(scene,snap,test)
-	
+
+# Sphere begins here
+
+def calcLossesSphere1():
+	scene = path.join(DATADIR,"metal_linearlight/transforms_out_cl067.json")
+	snap = path.join(SNAPDIR,"metal_balls_single.msgpack")
+	test = path.join(DATADIR,"metal_linearlight/transforms_out_cl067.json")
+	calcLosses(scene,snap,test)
+
+def calcLossesSphere():
+	scene = path.join(DATADIR,"metal_linearlight/transforms_out.json")
+	snap = path.join(SNAPDIR,"metal_balls.msgpack")
+	test = path.join(DATADIR,"metal_linearlight/transforms_out_cl067.json")
+	calcLosses(scene,snap,test)
+
 
 if __name__ == "__main__":
-	#checkSnapshots()
+	checkSnapshots()
 	saveSnapshots()
-	#makeScreenshotFox()
+	#makeScreenshotLego()
+	#makeScreenshotLegoBig()
 	#makeScreenshotBikeSingle()
 	#makeScreenshotSingleColmap()
 	#makeScreenshotBikeColmap()
 	#makeScreenshotBike()
 	#calcLossesFox()
-	calcLossesBikePython()
+	#calcLossesLego()
+	calcLossesLegoDeep()
+	#calcLossesLegoSingle()
+	#calcLossesLegoBig()
+	#calcLossesBikePython()
 	#calcLossesBikePython1()
 	#calcLossesBikeColmap()
 	#calcLossesBikeColmap1()
-	# Single Colmap still isn't working
+	#calcLossesSphere()
+	#calcLossesSphere1()

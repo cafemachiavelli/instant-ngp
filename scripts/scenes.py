@@ -234,7 +234,7 @@ def default_snapshot_filename(scene):
 def mode_from_scene(scene):
 	if scene in scenes_sdf:
 		return "sdf"
-	elif scene in scenes_nerf:
+	elif scene in scenes_nerf or ".json" in scene:
 		return "nerf"
 	elif scene in scenes_image:
 		return "image"
